@@ -11,6 +11,7 @@ Table of contents
 1. [Installation](#installation)
 1. [General settings](#general-settings)
 1. [Key bindings](#key-bindings)
+1. [Plugins](#plugins)
 1. [Status line](#status-line)
 1. [Nested tmux sessions](#nested-tmux-sessions)
 1. [Copy mode](#copy-mode)
@@ -34,6 +35,8 @@ Features
 - highlight focused pane
 - merge current session with existing one (move all windows)
 - configurable visual theme/colors, with some elements borrowed from [Powerline](https://github.com/powerline/powerline)
+- persist sessions across restarts with [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) and [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) (automatic save every 15 minutes, automatic restore on tmux start)
+- seamless navigation between vim splits and tmux panes with [vim-tmux-navigator](https://github.com/christoomey/vim-tmux-navigator)
 - integration with 3rd party plugins: [tmux-sidebar](https://github.com/tmux-plugins/tmux-sidebar), [tmux-copycat](https://github.com/tmux-plugins/tmux-copycat), [tmux-open](https://github.com/tmux-plugins/tmux-open), [tmux-plugin-sysstat](https://github.com/samoshkin/tmux-plugin-sysstat)
 
 **Status line widgets**:
@@ -45,7 +48,6 @@ Features
 - visual indicator when you're in `Copy` mode
 - visual indicator when pane is zoomed
 - online/offline visual indicator
-- toggle visibility of status line
 
 
 Installation
@@ -67,7 +69,7 @@ $ ./tmux-config/install.sh
 
 `install.sh` script does following:
 - copies files to `~/.tmux` directory
-- symlink tmux config file at `~/.tmux.conf`, existing `~/.tmux.conf` will be backed up
+- symlink `~/.tmux.conf` to `~/.tmux/tmux.conf`, existing `~/.tmux.conf` will be backed up
 - [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm) will be installed at default location `~/.tmux/plugins/tpm`, unless already presemt
 - required tmux plugins will be installed
 
@@ -121,7 +123,7 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>-</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; C-r</code></td>
+        <td><code>&lt;prefix&gt; e</code></td>
         <td>Reload tmux configuration from ~/.tmux.conf file</td>
         <td>-</td>
     </tr>
@@ -136,7 +138,7 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>-</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; _</code></td>
+        <td><code>&lt;prefix&gt; -</code></td>
         <td>Split new pane horizontally</td>
         <td>⌘⇧D</td>
     </tr>
@@ -146,14 +148,14 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>⌘D</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; &lt;</code></td>
-        <td>Select next pane</td>
-        <td>⌘[</td>
+        <td><code>&lt;prefix&gt; [</code></td>
+        <td>Enter copy mode (same as <code>M-Up</code>)</td>
+        <td>-</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; &gt;</code></td>
-        <td>Select previous pane</td>
-        <td>⌘]</td>
+        <td><code>&lt;prefix&gt; ]</code></td>
+        <td>Paste most recent buffer (same as <code>&lt;prefix&gt; p</code>)</td>
+        <td>-</td>
     </tr>
     <tr>
         <td><code>&lt;prefix&gt; ←</code></td>
@@ -176,6 +178,11 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>⌘⌥↓</td>
     </tr>
     <tr>
+        <td nowrap><code>C-h</code> <code>C-j</code> <code>C-k</code> <code>C-l</code></td>
+        <td>Select pane on the left/bottom/top/right, seamlessly moving between vim splits and tmux panes (no prefix, provided by vim-tmux-navigator)</td>
+        <td>-</td>
+    </tr>
+    <tr>
         <td><code>&lt;prefix&gt; C-←</code></td>
         <td>Resize pane to the left</td>
         <td>^⌘←</td>
@@ -196,13 +203,13 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>^⌘↓</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; &gt;</code></td>
-        <td>Move to next window</td>
+        <td><code>&lt;prefix&gt; L</code></td>
+        <td>Move to next window (repeatable)</td>
         <td>⌘⇧]</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; &lt;</code></td>
-        <td>Move to previous window</td>
+        <td><code>&lt;prefix&gt; H</code></td>
+        <td>Move to previous window (repeatable)</td>
         <td>⌘⇧[</td>
     </tr>
     <tr>
@@ -211,7 +218,7 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>^Tab</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; L</code></td>
+        <td><code>&lt;prefix&gt; l</code></td>
         <td>Link window from another session by entering target session and window reference</td>
         <td>-</td>
     </tr>
@@ -226,10 +233,10 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>-</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; +</code></td>
+        <td><code>&lt;prefix&gt; m</code></td>
         <td>Toggle zoom for current pane</td>
         <td>⌘⇧Enter</td>
-    </td>
+    </tr>
     <tr>
         <td><code>&lt;prefix&gt; x</code></td>
         <td>Kill current pane</td>
@@ -266,18 +273,13 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>-</td>
     </tr>
     <tr>
-        <td><code>&lt;prefix&gt; C-s</code></td>
-        <td>Toggle status bar visibility</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td><code>&lt;prefix&gt; m</code></td>
-        <td>Monitor current window for activity</td>
+        <td><code>&lt;prefix&gt; a</code></td>
+        <td>Toggle monitoring current window for activity</td>
         <td>-</td>
     </tr>
     <tr>
         <td><code>&lt;prefix&gt; M</code></td>
-        <td>Monitor current window for silence by entering silence period</td>
+        <td>Monitor current window for silence by entering silence period (press again to turn off)</td>
         <td>-</td>
     </tr>
     <tr>
@@ -285,7 +287,34 @@ If you are an iTerm2 user, third column describes the keybinding of similar  "ac
         <td>Switch off all key binding and prefix hanling in current window. See "Nested sessions" paragraph for more info</td>
         <td>-</td>
     </tr>
+    <tr>
+        <td><code>&lt;prefix&gt; $</code></td>
+        <td>Renew environment variables (SSH_AUTH_SOCK, DISPLAY, etc.) in current shell after reattaching</td>
+        <td>-</td>
+    </tr>
 </table>
+
+Every newly created window prompts for its name right away.
+
+Default tmux bindings that are not overridden still work, e.g. arrow keys to select pane and `C-arrow` keys to resize it.
+
+
+Plugins
+-------
+Plugins are managed by [TPM](https://github.com/tmux-plugins/tpm). Plugins bring their own key bindings:
+
+| Key | Plugin | Description |
+|-----|--------|-------------|
+| `<prefix> C-s` | tmux-resurrect | Save all sessions, windows and panes (pane contents included) |
+| `<prefix> C-r` | tmux-resurrect | Restore saved sessions |
+| `<prefix> t` / `<prefix> T` | tmux-sidebar | Toggle directory tree sidebar (`tree -C`) / toggle and focus it |
+| `<prefix> C-f`, `<prefix> C-g`, `<prefix> /` | tmux-copycat | Search for files, git status files, or by regex |
+| `o`, `C-o`, `S` (in copy mode) | tmux-open | Open selection with default program, with `$EDITOR`, or search it in Google |
+| `<prefix> I`, `<prefix> U` | tpm | Install / update plugins |
+
+tmux-continuum saves sessions automatically every 15 minutes and restores the last saved environment when tmux starts.
+
+Note: the config also binds `<prefix> C-s` to toggle status bar visibility, but tmux-resurrect is loaded later and takes this key over.
 
 
 Status line
@@ -315,8 +344,6 @@ The right part of status line consists of following components:
 - visual indicator when pane is zoomed: `[Z]`
 - online/offline visual indicator (just pings `google.com`)
 
-You might want to hide status bar using `<prefix> C-s` keybinding.
-
 
 Nested tmux sessions
 --------------------
@@ -342,7 +369,7 @@ Remote session is detected by existence of `$SSH_CLIENT` variable. When session 
 - status line is docked to bottom; so it does not stack with status line of local session
 - some widgets are removed from status line: battery, date time. The idea is to economy width, so on wider screens you can open two remote tmux sessions in side-by-side panes of single window of local session.
 
-You can apply remote-specific settings by extending `~/.tmux/.tmux.remote.conf` file.
+You can apply remote-specific settings by extending `~/.tmux/tmux.remote.conf` file.
 
 
 Copy mode
@@ -356,9 +383,9 @@ There is a root keybinding to enter Copy mode: `M-Up`. Once in copy mode, you ha
 - scroll by whole screen: `PageUp`, `PageDown`
 - scroll by mouse wheel, scroll step is changed from `5` lines to `2`
 
-`Space` starts selection, `Enter` copies selection and exits copy mode. List all items in copy buffer using `prefix C-p`, and paste most recent item from buffer using `prexix p`.
+`Space` or `v` starts selection, `Enter` copies selection and exits copy mode. List all items in copy buffer using `prefix C-p`, and paste most recent item from buffer using `prexix p`.
 
-`y` just copies selected text and is equivalent to `Enter`,  `Y` copies whole line, and `D` copies by the end of line.
+`y` (or `C-j`) just copies selected text and is equivalent to `Enter`, `Y` copies whole line, `D` copies by the end of line, and `A` appends selection to the latest buffer. `J` and `K` move the cursor 5 lines down and up.
 
 Also, note, that when text is copied any trailing new lines are stripped. So, when you paste buffer in a command prompt, it will not be immediately executed.
 
